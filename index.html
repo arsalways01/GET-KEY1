@@ -5,17 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arsalways Key Generator</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- HANYA pakai Realtime Database, TIDAK pakai Firestore -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body {
             background-color: #0a0a0a;
             color: #fff;
@@ -23,60 +16,35 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
             position: relative;
         }
-
         .bg-neon {
             position: absolute;
-            width: 100%;
-            height: 100%;
-            background: 
-                radial-gradient(circle at 20% 30%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 70%, rgba(255, 0, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 80%, rgba(0, 255, 0, 0.1) 0%, transparent 50%);
+            width: 100%; height: 100%;
+            background: radial-gradient(circle at 20% 30%, rgba(0,255,255,0.1) 0%, transparent 50%),
+                       radial-gradient(circle at 80% 70%, rgba(255,0,255,0.1) 0%, transparent 50%);
             z-index: -1;
         }
-
         .container {
-            max-width: 800px;
-            width: 90%;
+            max-width: 800px; width: 90%;
             text-align: center;
             padding: 20px;
             z-index: 1;
         }
-
         .logo-circle {
-            width: 150px;
-            height: 150px;
+            width: 150px; height: 150px;
             background: linear-gradient(45deg, #00ffff, #ff00ff, #ffff00);
             border-radius: 50%;
             margin: 0 auto 20px;
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 
-                0 0 20px #00ffff,
-                0 0 40px #ff00ff,
-                inset 0 0 20px rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 20px #00ffff, 0 0 40px #ff00ff;
             animation: pulse 4s infinite alternate;
-            position: relative;
-            overflow: hidden;
         }
-
-        .logo-circle::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
-            border-radius: 50%;
-        }
-
         .logo-inner {
-            width: 120px;
-            height: 120px;
-            background-color: rgba(10, 10, 10, 0.9);
+            width: 120px; height: 120px;
+            background-color: rgba(10,10,10,0.9);
             border-radius: 50%;
             display: flex;
             justify-content: center;
@@ -85,7 +53,6 @@
             color: #00ffff;
             text-shadow: 0 0 10px #00ffff;
         }
-
         .brand-name {
             font-size: 42px;
             font-weight: bold;
@@ -93,58 +60,31 @@
             background: linear-gradient(45deg, #00ffff, #ff00ff, #ffff00);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
             letter-spacing: 2px;
         }
-
         .key-box {
-            background-color: rgba(20, 20, 30, 0.8);
+            background-color: rgba(20,20,30,0.8);
             border-radius: 15px;
             padding: 30px;
-            margin-bottom: 30px;
             border: 2px solid #00ffff;
-            box-shadow: 
-                0 0 15px rgba(0, 255, 255, 0.5),
-                inset 0 0 10px rgba(0, 255, 255, 0.1);
-            position: relative;
-            overflow: hidden;
+            box-shadow: 0 0 15px rgba(0,255,255,0.5);
         }
-
-        .key-box::before {
-            content: '';
-            position: absolute;
-            top: -10px;
-            left: -10px;
-            right: -10px;
-            bottom: -10px;
-            background: linear-gradient(45deg, #00ffff, #ff00ff, #00ff00, #ffff00);
-            z-index: -1;
-            border-radius: 20px;
-            filter: blur(20px);
-            opacity: 0.3;
-        }
-
         .key-label {
             font-size: 24px;
             margin-bottom: 20px;
             color: #ffff00;
-            text-shadow: 0 0 5px #ffff00;
         }
-
         .key-value {
             font-family: 'Courier New', monospace;
             font-size: 28px;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(0,0,0,0.5);
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 25px;
             word-break: break-all;
             border: 1px solid #ff00ff;
             color: #00ff00;
-            text-shadow: 0 0 5px #00ff00;
-            letter-spacing: 1px;
         }
-
         .copy-btn {
             background: linear-gradient(45deg, #00ffff, #ff00ff);
             border: none;
@@ -153,77 +93,33 @@
             font-size: 18px;
             border-radius: 50px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            margin: 0 auto;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto;
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
         }
-
-        .copy-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 20px rgba(255, 0, 255, 0.7);
-        }
-
-        .copy-btn i {
-            margin-right: 10px;
-            font-size: 20px;
-        }
-
         .status {
             margin-top: 20px;
             font-size: 16px;
             min-height: 25px;
             color: #00ffff;
         }
-
-        .success {
-            color: #00ff00;
-            background: rgba(0, 255, 0, 0.1);
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #00ff00;
-        }
-
-        .error {
-            color: #ff5555;
-            background: rgba(255, 85, 85, 0.1);
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ff5555;
-        }
-
-        .info {
-            color: #ffff00;
-            background: rgba(255, 255, 0, 0.1);
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ffff00;
-            margin-top: 20px;
-            font-size: 14px;
-        }
-
+        .success { color: #00ff00; }
+        .error { color: #ff5555; }
         @keyframes pulse {
-            0% { box-shadow: 0 0 20px #00ffff, 0 0 40px #ff00ff, inset 0 0 20px rgba(255, 255, 255, 0.2); }
-            100% { box-shadow: 0 0 25px #ff00ff, 0 0 50px #00ffff, inset 0 0 25px rgba(255, 255, 255, 0.3); }
+            0% { box-shadow: 0 0 20px #00ffff, 0 0 40px #ff00ff; }
+            100% { box-shadow: 0 0 25px #ff00ff, 0 0 50px #00ffff; }
         }
-
         .loading {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(0, 255, 255, 0.3);
+            width: 20px; height: 20px;
+            border: 3px solid rgba(0,255,255,0.3);
             border-radius: 50%;
             border-top-color: #00ffff;
             animation: spin 1s ease-in-out infinite;
             margin-left: 10px;
         }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
+        @keyframes spin { to { transform: rotate(360deg); } }
         @media (max-width: 768px) {
             .logo-circle { width: 120px; height: 120px; }
             .logo-inner { width: 90px; height: 90px; font-size: 40px; }
@@ -238,9 +134,7 @@
         <div class="logo-circle">
             <div class="logo-inner">A</div>
         </div>
-        
         <h1 class="brand-name">Arsalways</h1>
-        
         <div class="key-box">
             <div class="key-label">KEY ANDA</div>
             <div id="keyDisplay" class="key-value">Generating key...</div>
@@ -248,115 +142,86 @@
                 <i class="fas fa-copy"></i> Salin Key
             </button>
             <div id="status" class="status"></div>
-            
-            <div class="info">
-                <i class="fas fa-bolt"></i> 
-                Key ini langsung dikirim ke Firebase Realtime Database
-            </div>
         </div>
     </div>
 
     <script>
-        // ==================== KONFIGURASI FIREBASE REALTIME DATABASE ====================
+        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyAF3B3_Bq-Q9ulQdxfXHkCBqMTIDlx0sqY",
             authDomain: "panel-user-b78ff.firebaseapp.com",
-            databaseURL: "https://panel-user-b78ff-default-rtdb.firebaseio.com", // INI YANG PENTING!
+            databaseURL: "https://panel-user-b78ff-default-rtdb.firebaseio.com",
             projectId: "panel-user-b78ff",
             storageBucket: "panel-user-b78ff.firebasestorage.app",
             messagingSenderId: "86797928744",
             appId: "1:86797928744:web:cb85dd498c6cf3b659281d"
         };
 
-        // ==================== INISIALISASI ====================
-        let database; // Realtime Database, BUKAN Firestore!
+        // Initialize Firebase Realtime Database
+        let database;
         let currentKey = "";
-
-        // Fungsi initialize Firebase REALTIME DATABASE
-        function initializeFirebase() {
-            try {
-                // Inisialisasi Firebase
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
-                }
-                
-                // Dapatkan REALTIME DATABASE instance
-                database = firebase.database();
-                console.log("✅ Firebase Realtime Database siap!");
-                return true;
-            } catch (error) {
-                console.error("❌ Error inisialisasi Firebase:", error);
-                return false;
+        
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
             }
+            database = firebase.database();
+            console.log("✅ Firebase Realtime Database connected!");
+        } catch (error) {
+            console.error("❌ Firebase error:", error);
         }
 
-        // ==================== GENERATE KEY ACAK ====================
+        // Generate Random Key
         function generateRandomKey() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
             let key = 'ARS-';
-            
-            // Format: ARS-XXXXXXXX-XXXX-XXXX-XXXXXXXX
-            for (let i = 0; i < 32; i++) {
+            for (let i = 0; i < 20; i++) {
                 key += chars.charAt(Math.floor(Math.random() * chars.length));
-                if (i === 7 || i === 11 || i === 15 || i === 19) {
-                    key += '-';
-                }
+                if (i === 3 || i === 7 || i === 11) key += '-';
             }
-            
             return key;
         }
 
-        // ==================== SIMPAN KE REALTIME DATABASE ====================
-        function saveKeyToRealtimeDB(key) {
-            if (!database) {
-                console.log("❌ Database tidak terhubung");
-                return false;
-            }
+        // Save to Realtime Database
+        function saveToFirebase(key) {
+            if (!database) return false;
             
-            try {
-                // Buat ID unik berdasarkan timestamp
-                const keyId = 'key_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                
-                // Data yang akan dikirim
-                const keyData = {
-                    key: key,
-                    timestamp: Date.now(),
-                    date: new Date().toLocaleDateString('id-ID'),
-                    time: new Date().toLocaleTimeString('id-ID'),
-                    status: "active",
-                    used: false,
-                    source: "website"
-                };
-                
-                console.log("📤 Mengirim ke Realtime Database:", keyData);
-                
-                // Simpan ke path: /keys/{keyId}
-                database.ref('keys/' + keyId).set(keyData)
-                    .then(() => {
-                        console.log("✅ Key berhasil dikirim ke Realtime Database!");
-                        showMessage('✅ Key berhasil dikirim ke database!', 'success');
-                        return true;
-                    })
-                    .catch((error) => {
-                        console.error("❌ Error mengirim ke database:", error);
-                        showMessage('⚠️ Gagal mengirim ke database', 'error');
-                        return false;
-                    });
-                    
-                return true;
-            } catch (error) {
-                console.error("❌ Error:", error);
-                return false;
-            }
+            const keyId = 'key_' + Date.now();
+            const keyData = {
+                key: key,
+                timestamp: Date.now(),
+                date: new Date().toLocaleDateString('id-ID'),
+                time: new Date().toLocaleTimeString('id-ID'),
+                status: "active"
+            };
+            
+            database.ref('keys/' + keyId).set(keyData)
+                .then(() => {
+                    console.log("✅ Key saved to Firebase!");
+                    showMessage('✅ Key saved to database!', 'success');
+                    return true;
+                })
+                .catch(error => {
+                    console.error("❌ Save error:", error);
+                    showMessage('⚠️ Failed to save', 'error');
+                    return false;
+                });
+            
+            return true;
         }
 
-        // ==================== FUNGSI BANTU ====================
+        // Helper Functions
+        function showMessage(msg, type) {
+            const status = document.getElementById('status');
+            status.innerHTML = msg;
+            status.className = 'status ' + type;
+        }
+
         async function copyToClipboard(text) {
             try {
                 await navigator.clipboard.writeText(text);
                 return true;
-            } catch (error) {
-                // Fallback
+            } catch (err) {
                 const textArea = document.createElement('textarea');
                 textArea.value = text;
                 document.body.appendChild(textArea);
@@ -367,101 +232,36 @@
             }
         }
 
-        function showMessage(message, type = 'info') {
-            const statusEl = document.getElementById('status');
-            if (type === 'success') {
-                statusEl.innerHTML = `<div class="success">${message}</div>`;
-            } else if (type === 'error') {
-                statusEl.innerHTML = `<div class="error">${message}</div>`;
-            } else {
-                statusEl.innerHTML = `<div class="info">${message}</div>`;
-            }
-            
-            // Auto clear
-            if (type === 'success' || type === 'error') {
-                setTimeout(() => {
-                    statusEl.innerHTML = '';
-                }, 5000);
-            }
-        }
-
-        // ==================== MAIN PROCESS ====================
-        document.addEventListener('DOMContentLoaded', async function() {
+        // Main Process
+        document.addEventListener('DOMContentLoaded', function() {
             const keyDisplay = document.getElementById('keyDisplay');
             const copyBtn = document.getElementById('copyBtn');
             
-            // Step 1: Initialize Firebase REALTIME DATABASE
-            showMessage('<span class="loading"></span> Menghubungkan ke Firebase...', 'info');
-            
-            const firebaseConnected = initializeFirebase();
-            
-            if (!firebaseConnected) {
-                showMessage('❌ Gagal terhubung ke Firebase', 'error');
-                copyBtn.disabled = false;
-                return;
-            }
-            
-            // Step 2: Generate key
+            // Generate and save key
             setTimeout(() => {
-                showMessage('<span class="loading"></span> Membuat key acak...', 'info');
+                currentKey = generateRandomKey();
+                keyDisplay.textContent = currentKey;
+                showMessage('<span class="loading"></span> Saving to database...', '');
                 
                 setTimeout(() => {
-                    // Generate key acak
-                    currentKey = generateRandomKey();
-                    keyDisplay.textContent = currentKey;
-                    
-                    // Step 3: Kirim ke Realtime Database
-                    showMessage('<span class="loading"></span> Mengirim key ke database...', 'info');
-                    
-                    setTimeout(() => {
-                        const saveSuccess = saveKeyToRealtimeDB(currentKey);
-                        
-                        if (saveSuccess) {
-                            // Success message sudah ditampilkan di saveKeyToRealtimeDB
-                        } else {
-                            showMessage('⚠️ Key hanya tersimpan lokal', 'error');
-                        }
-                        
-                        copyBtn.disabled = false;
-                        
-                    }, 1000);
-                    
-                }, 1000);
+                    saveToFirebase(currentKey);
+                }, 500);
                 
             }, 1000);
             
-            // Copy button event
+            // Copy button
             copyBtn.addEventListener('click', async function() {
-                if (!currentKey) return;
-                
                 const success = await copyToClipboard(currentKey);
-                
                 if (success) {
-                    const originalText = copyBtn.innerHTML;
-                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Tersalin!';
+                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
                     copyBtn.style.background = 'linear-gradient(45deg, #00ff00, #00cc00)';
-                    
                     setTimeout(() => {
-                        copyBtn.innerHTML = originalText;
+                        copyBtn.innerHTML = '<i class="fas fa-copy"></i> Salin Key';
                         copyBtn.style.background = 'linear-gradient(45deg, #00ffff, #ff00ff)';
                     }, 2000);
-                } else {
-                    showMessage('❌ Gagal menyalin ke clipboard', 'error');
                 }
             });
         });
-
-        // ==================== CARA SETUP FIREBASE ====================
-        console.log("=== CARA SETUP FIREBASE REALTIME DATABASE ===");
-        console.log("1. Buka Firebase Console");
-        console.log("2. Pilih project Anda");
-        console.log("3. Klik 'Realtime Database' di menu kiri");
-        console.log("4. Klik 'Create Database'");
-        console.log("5. Pilih lokasi terdekat");
-        console.log("6. Pilih mode 'Start in test mode'");
-        console.log("7. Copy Database URL (format: https://PROJECT-ID.firebaseio.com)");
-        console.log("8. Paste URL ke databaseURL di config");
-        console.log("=============================================");
     </script>
 </body>
 </html>
