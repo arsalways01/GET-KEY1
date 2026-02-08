@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arsalways Key Generator</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- HANYA pakai Realtime Database, TIDAK pakai Firestore -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -26,7 +27,6 @@
             position: relative;
         }
 
-        /* Background efek neon */
         .bg-neon {
             position: absolute;
             width: 100%;
@@ -46,7 +46,6 @@
             z-index: 1;
         }
 
-        /* Logo bulat */
         .logo-circle {
             width: 150px;
             height: 150px;
@@ -87,7 +86,6 @@
             text-shadow: 0 0 10px #00ffff;
         }
 
-        /* Nama Arsalways */
         .brand-name {
             font-size: 42px;
             font-weight: bold;
@@ -99,7 +97,6 @@
             letter-spacing: 2px;
         }
 
-        /* Kotak kunci */
         .key-box {
             background-color: rgba(20, 20, 30, 0.8);
             border-radius: 15px;
@@ -148,7 +145,6 @@
             letter-spacing: 1px;
         }
 
-        /* Tombol */
         .copy-btn {
             background: linear-gradient(45deg, #00ffff, #ff00ff);
             border: none;
@@ -175,7 +171,6 @@
             font-size: 20px;
         }
 
-        /* Status */
         .status {
             margin-top: 20px;
             font-size: 16px;
@@ -183,23 +178,37 @@
             color: #00ffff;
         }
 
-        /* Animasi */
-        @keyframes pulse {
-            0% {
-                box-shadow: 
-                    0 0 20px #00ffff,
-                    0 0 40px #ff00ff,
-                    inset 0 0 20px rgba(255, 255, 255, 0.2);
-            }
-            100% {
-                box-shadow: 
-                    0 0 25px #ff00ff,
-                    0 0 50px #00ffff,
-                    inset 0 0 25px rgba(255, 255, 255, 0.3);
-            }
+        .success {
+            color: #00ff00;
+            background: rgba(0, 255, 0, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #00ff00;
         }
 
-        /* Loading */
+        .error {
+            color: #ff5555;
+            background: rgba(255, 85, 85, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ff5555;
+        }
+
+        .info {
+            color: #ffff00;
+            background: rgba(255, 255, 0, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ffff00;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 20px #00ffff, 0 0 40px #ff00ff, inset 0 0 20px rgba(255, 255, 255, 0.2); }
+            100% { box-shadow: 0 0 25px #ff00ff, 0 0 50px #00ffff, inset 0 0 25px rgba(255, 255, 255, 0.3); }
+        }
+
         .loading {
             display: inline-block;
             width: 20px;
@@ -215,27 +224,11 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Responsif */
         @media (max-width: 768px) {
-            .logo-circle {
-                width: 120px;
-                height: 120px;
-            }
-            
-            .logo-inner {
-                width: 90px;
-                height: 90px;
-                font-size: 40px;
-            }
-            
-            .brand-name {
-                font-size: 32px;
-            }
-            
-            .key-value {
-                font-size: 20px;
-                padding: 15px;
-            }
+            .logo-circle { width: 120px; height: 120px; }
+            .logo-inner { width: 90px; height: 90px; font-size: 40px; }
+            .brand-name { font-size: 32px; }
+            .key-value { font-size: 20px; padding: 15px; }
         }
     </style>
 </head>
@@ -250,91 +243,120 @@
         
         <div class="key-box">
             <div class="key-label">KEY ANDA</div>
-            <div id="keyDisplay" class="key-value">Memuat kunci...</div>
+            <div id="keyDisplay" class="key-value">Generating key...</div>
             <button id="copyBtn" class="copy-btn">
                 <i class="fas fa-copy"></i> Salin Key
             </button>
             <div id="status" class="status"></div>
+            
+            <div class="info">
+                <i class="fas fa-bolt"></i> 
+                Key ini langsung dikirim ke Firebase Realtime Database
+            </div>
         </div>
     </div>
 
     <script>
-        // Konfigurasi Firebase
+        // ==================== KONFIGURASI FIREBASE REALTIME DATABASE ====================
         const firebaseConfig = {
             apiKey: "AIzaSyAF3B3_Bq-Q9ulQdxfXHkCBqMTIDlx0sqY",
             authDomain: "panel-user-b78ff.firebaseapp.com",
-            projectId: " panel-user-b78ff",
+            databaseURL: "https://panel-user-b78ff-default-rtdb.firebaseio.com", // INI YANG PENTING!
+            projectId: "panel-user-b78ff",
             storageBucket: "panel-user-b78ff.firebasestorage.app",
             messagingSenderId: "86797928744",
             appId: "1:86797928744:web:cb85dd498c6cf3b659281d"
         };
 
-        // Inisialisasi Firebase
-        let db;
-        try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
-            console.log("Firebase berhasil diinisialisasi");
-        } catch (error) {
-            console.error("Error inisialisasi Firebase:", error);
-            document.getElementById('status').innerHTML = "⚠️ Firebase tidak terhubung. Kunci hanya lokal.";
+        // ==================== INISIALISASI ====================
+        let database; // Realtime Database, BUKAN Firestore!
+        let currentKey = "";
+
+        // Fungsi initialize Firebase REALTIME DATABASE
+        function initializeFirebase() {
+            try {
+                // Inisialisasi Firebase
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                
+                // Dapatkan REALTIME DATABASE instance
+                database = firebase.database();
+                console.log("✅ Firebase Realtime Database siap!");
+                return true;
+            } catch (error) {
+                console.error("❌ Error inisialisasi Firebase:", error);
+                return false;
+            }
         }
 
-        // Generate kunci acak
+        // ==================== GENERATE KEY ACAK ====================
         function generateRandomKey() {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let key = '';
-            const segments = [8, 4, 4, 4, 12]; // Format: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+            let key = 'ARS-';
             
-            for (let i = 0; i < segments.length; i++) {
-                for (let j = 0; j < segments[i]; j++) {
-                    key += chars.charAt(Math.floor(Math.random() * chars.length));
+            // Format: ARS-XXXXXXXX-XXXX-XXXX-XXXXXXXX
+            for (let i = 0; i < 32; i++) {
+                key += chars.charAt(Math.floor(Math.random() * chars.length));
+                if (i === 7 || i === 11 || i === 15 || i === 19) {
+                    key += '-';
                 }
-                if (i < segments.length - 1) key += '-';
             }
             
             return key;
         }
 
-        // Simpan kunci ke Firebase
-        async function saveKeyToFirebase(key) {
-            if (!db) return null;
+        // ==================== SIMPAN KE REALTIME DATABASE ====================
+        function saveKeyToRealtimeDB(key) {
+            if (!database) {
+                console.log("❌ Database tidak terhubung");
+                return false;
+            }
             
             try {
+                // Buat ID unik berdasarkan timestamp
+                const keyId = 'key_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                
+                // Data yang akan dikirim
                 const keyData = {
                     key: key,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    userAgent: navigator.userAgent,
-                    ip: await getClientIP() // Fungsi sederhana untuk mendapatkan IP
+                    timestamp: Date.now(),
+                    date: new Date().toLocaleDateString('id-ID'),
+                    time: new Date().toLocaleTimeString('id-ID'),
+                    status: "active",
+                    used: false,
+                    source: "website"
                 };
                 
-                const docRef = await db.collection('generatedKeys').add(keyData);
-                console.log("Kunci disimpan dengan ID:", docRef.id);
-                return docRef.id;
+                console.log("📤 Mengirim ke Realtime Database:", keyData);
+                
+                // Simpan ke path: /keys/{keyId}
+                database.ref('keys/' + keyId).set(keyData)
+                    .then(() => {
+                        console.log("✅ Key berhasil dikirim ke Realtime Database!");
+                        showMessage('✅ Key berhasil dikirim ke database!', 'success');
+                        return true;
+                    })
+                    .catch((error) => {
+                        console.error("❌ Error mengirim ke database:", error);
+                        showMessage('⚠️ Gagal mengirim ke database', 'error');
+                        return false;
+                    });
+                    
+                return true;
             } catch (error) {
-                console.error("Error menyimpan ke Firebase:", error);
-                return null;
+                console.error("❌ Error:", error);
+                return false;
             }
         }
 
-        // Fungsi sederhana untuk mendapatkan IP (menggunakan layanan eksternal)
-        async function getClientIP() {
-            try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                return data.ip;
-            } catch (error) {
-                return "unknown";
-            }
-        }
-
-        // Salin kunci ke clipboard
+        // ==================== FUNGSI BANTU ====================
         async function copyToClipboard(text) {
             try {
                 await navigator.clipboard.writeText(text);
                 return true;
             } catch (error) {
-                // Fallback untuk browser lama
+                // Fallback
                 const textArea = document.createElement('textarea');
                 textArea.value = text;
                 document.body.appendChild(textArea);
@@ -345,36 +367,74 @@
             }
         }
 
-        // Ketika halaman dimuat
+        function showMessage(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            if (type === 'success') {
+                statusEl.innerHTML = `<div class="success">${message}</div>`;
+            } else if (type === 'error') {
+                statusEl.innerHTML = `<div class="error">${message}</div>`;
+            } else {
+                statusEl.innerHTML = `<div class="info">${message}</div>`;
+            }
+            
+            // Auto clear
+            if (type === 'success' || type === 'error') {
+                setTimeout(() => {
+                    statusEl.innerHTML = '';
+                }, 5000);
+            }
+        }
+
+        // ==================== MAIN PROCESS ====================
         document.addEventListener('DOMContentLoaded', async function() {
             const keyDisplay = document.getElementById('keyDisplay');
             const copyBtn = document.getElementById('copyBtn');
-            const statusEl = document.getElementById('status');
             
-            // Generate kunci baru
-            const newKey = generateRandomKey();
-            keyDisplay.textContent = newKey;
+            // Step 1: Initialize Firebase REALTIME DATABASE
+            showMessage('<span class="loading"></span> Menghubungkan ke Firebase...', 'info');
             
-            // Tampilkan status memuat
-            statusEl.innerHTML = '<span class="loading"></span> Menyimpan kunci ke database...';
+            const firebaseConnected = initializeFirebase();
             
-            // Simpan ke Firebase
-            const savedId = await saveKeyToFirebase(newKey);
-            
-            if (savedId) {
-                statusEl.innerHTML = '✅ Kunci telah disimpan di database.';
-                
-                // Update status setelah 3 detik
-                setTimeout(() => {
-                    statusEl.innerHTML = 'Kunci siap digunakan!';
-                }, 3000);
-            } else {
-                statusEl.innerHTML = '⚠️ Kunci hanya tersimpan di browser ini.';
+            if (!firebaseConnected) {
+                showMessage('❌ Gagal terhubung ke Firebase', 'error');
+                copyBtn.disabled = false;
+                return;
             }
             
-            // Event listener untuk tombol salin
+            // Step 2: Generate key
+            setTimeout(() => {
+                showMessage('<span class="loading"></span> Membuat key acak...', 'info');
+                
+                setTimeout(() => {
+                    // Generate key acak
+                    currentKey = generateRandomKey();
+                    keyDisplay.textContent = currentKey;
+                    
+                    // Step 3: Kirim ke Realtime Database
+                    showMessage('<span class="loading"></span> Mengirim key ke database...', 'info');
+                    
+                    setTimeout(() => {
+                        const saveSuccess = saveKeyToRealtimeDB(currentKey);
+                        
+                        if (saveSuccess) {
+                            // Success message sudah ditampilkan di saveKeyToRealtimeDB
+                        } else {
+                            showMessage('⚠️ Key hanya tersimpan lokal', 'error');
+                        }
+                        
+                        copyBtn.disabled = false;
+                        
+                    }, 1000);
+                    
+                }, 1000);
+                
+            }, 1000);
+            
+            // Copy button event
             copyBtn.addEventListener('click', async function() {
-                const success = await copyToClipboard(newKey);
+                if (!currentKey) return;
+                
+                const success = await copyToClipboard(currentKey);
                 
                 if (success) {
                     const originalText = copyBtn.innerHTML;
@@ -386,18 +446,22 @@
                         copyBtn.style.background = 'linear-gradient(45deg, #00ffff, #ff00ff)';
                     }, 2000);
                 } else {
-                    statusEl.innerHTML = '❌ Gagal menyalin ke clipboard.';
-                    setTimeout(() => {
-                        statusEl.innerHTML = 'Kunci siap digunakan!';
-                    }, 3000);
+                    showMessage('❌ Gagal menyalin ke clipboard', 'error');
                 }
             });
         });
 
-        // Info untuk pengguna
-        console.log("Website Generator Kunci Arsalways");
-        console.log("Kunci akan otomatis tersimpan ke Firebase");
-        console.log("Panel APK dapat melihat semua kunci yang dibuat");
+        // ==================== CARA SETUP FIREBASE ====================
+        console.log("=== CARA SETUP FIREBASE REALTIME DATABASE ===");
+        console.log("1. Buka Firebase Console");
+        console.log("2. Pilih project Anda");
+        console.log("3. Klik 'Realtime Database' di menu kiri");
+        console.log("4. Klik 'Create Database'");
+        console.log("5. Pilih lokasi terdekat");
+        console.log("6. Pilih mode 'Start in test mode'");
+        console.log("7. Copy Database URL (format: https://PROJECT-ID.firebaseio.com)");
+        console.log("8. Paste URL ke databaseURL di config");
+        console.log("=============================================");
     </script>
 </body>
 </html>
