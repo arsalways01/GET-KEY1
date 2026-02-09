@@ -119,9 +119,8 @@
             animation: spin 1s ease-in-out infinite;
             margin-left: 10px;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
         
-        /* STYLE BARU TANPA MENGUBAH YANG LAMA */
+        /* STYLE BARU */
         .timer-box {
             margin-top: 15px;
             font-size: 16px;
@@ -134,6 +133,55 @@
             color: #888;
             font-style: italic;
         }
+        .sfl-box {
+            background: rgba(255, 255, 0, 0.1);
+            border: 1px solid #ffff00;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .sfl-header {
+            color: #ffff00;
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .sfl-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 5px;
+        }
+        .sfl-checkbox {
+            margin-right: 10px;
+            width: 20px;
+            height: 20px;
+            accent-color: #00ffff;
+        }
+        .sfl-label {
+            flex: 1;
+        }
+        .sfl-btn {
+            background: linear-gradient(45deg, #ffff00, #ffaa00);
+            border: none;
+            color: #000;
+            padding: 12px 30px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 20px auto 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .sfl-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
         .refresh-warning {
             margin-top: 15px;
             padding: 10px;
@@ -141,8 +189,10 @@
             border: 1px solid #ff5555;
             border-radius: 5px;
             display: none;
+            color: #ff5555;
         }
         
+        @keyframes spin { to { transform: rotate(360deg); } }
         @media (max-width: 768px) {
             .logo-circle { width: 120px; height: 120px; }
             .logo-inner { width: 90px; height: 90px; font-size: 40px; }
@@ -158,17 +208,36 @@
             <div class="logo-inner">A</div>
         </div>
         <h1 class="brand-name">Arsalways</h1>
-        <div class="key-box">
+        
+        <!-- BOX SFL -->
+        <div id="sflBox" class="sfl-box">
+            <div class="sfl-header">WAJIB LEWATI SFL UNTUK MENDAPATKAN KEY</div>
+            <div class="sfl-item">
+                <input type="checkbox" id="sfl1" class="sfl-checkbox">
+                <label for="sfl1" class="sfl-label">✓ Saya sudah melakukan Step 1</label>
+            </div>
+            <div class="sfl-item">
+                <input type="checkbox" id="sfl2" class="sfl-checkbox">
+                <label for="sfl2" class="sfl-label">✓ Saya sudah melakukan Step 2</label>
+            </div>
+            <div class="sfl-item">
+                <input type="checkbox" id="sfl3" class="sfl-checkbox">
+                <label for="sfl3" class="sfl-label">✓ Saya sudah melakukan Step 3</label>
+            </div>
+            <button id="sflBtn" class="sfl-btn" disabled>
+                <i class="fas fa-check-circle"></i> LEWATI SFL
+            </button>
+        </div>
+        
+        <!-- BOX KEY (AWALNYA DISEMBUNYIKAN) -->
+        <div id="keyBox" class="key-box" style="display: none;">
             <div class="key-label">KEY ANDA</div>
-            <div id="keyDisplay" class="key-value">Generating key...</div>
-            
-            <!-- ELEMEN BARU -->
+            <div id="keyDisplay" class="key-value">Memuat key...</div>
             <div id="timerDisplay" class="timer-box"></div>
             <div id="deviceInfo" class="device-info"></div>
             <div id="refreshWarning" class="refresh-warning">
                 ⚠️ Key masih aktif! Refresh halaman akan menghapus key ini.
             </div>
-            
             <button id="copyBtn" class="copy-btn">
                 <i class="fas fa-copy"></i> Salin Key
             </button>
@@ -188,15 +257,22 @@
             appId: "1:86797928744:web:cb85dd498c6cf3b659281d"
         };
 
-        // Initialize Firebase Realtime Database - TIDAK DIUBAH
+        // Initialize Firebase
         let database;
         let currentKey = "";
-        
-        // VARIABEL BARU UNTUK FITUR TAMBAHAN
         let deviceId = "";
         let keyExpiryTime = null;
         let isBlockRefresh = false;
+        let sflCompleted = false;
         
+        // CACHE DATA DI MEMORY
+        const appState = {
+            deviceId: null,
+            key: null,
+            expiry: null,
+            sflPassed: false
+        };
+
         try {
             if (!firebase.apps.length) {
                 firebase.initializeApp(firebaseConfig);
@@ -207,7 +283,8 @@
             console.error("❌ Firebase error:", error);
         }
 
-        // Generate Random Key - TIDAK DIUBAH
+        // ========== FUNGSI UTAMA (TIDAK DIUBAH) ==========
+        
         function generateRandomKey() {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
             let key = 'ARS-';
@@ -218,116 +295,273 @@
             return key;
         }
 
-        // Save to Realtime Database - TAMBAHAN FITUR BARU
-        function saveToFirebase(key) {
-            if (!database) return false;
+        // ========== FITUR BARU: DEVICE FINGERPRINT TETAP ==========
+        
+        function generateDeviceFingerprint() {
+            // Gunakan localStorage sebagai backup jika fingerprint gagal
+            let storedId = localStorage.getItem('arsalways_device_fingerprint');
+            if (storedId) {
+                return storedId;
+            }
             
-            const keyId = 'key_' + Date.now();
+            // Generate fingerprint yang lebih stabil
+            const components = [
+                navigator.userAgent,
+                navigator.platform,
+                navigator.hardwareConcurrency || 'unknown',
+                screen.width,
+                screen.height,
+                screen.colorDepth,
+                new Date().getTimezoneOffset(),
+                navigator.language,
+                navigator.maxTouchPoints || '0'
+            ];
             
-            // TAMBAHAN: Generate device fingerprint
-            deviceId = generateDeviceFingerprint();
-            document.getElementById('deviceInfo').textContent = `Device ID: ${deviceId}`;
+            // Gabungkan dan hash
+            let hashString = components.join(':');
+            let hash = 0;
+            for (let i = 0; i < hashString.length; i++) {
+                const char = hashString.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
             
-            // TAMBAHAN: Set expiry 24 jam
+            const fingerprint = 'DEV_' + Math.abs(hash).toString(36).toUpperCase().padStart(12, '0');
+            
+            // SIMPAN KE LOCALSTORAGE DENGAN EXPIRY 30 HARI
+            localStorage.setItem('arsalways_device_fingerprint', fingerprint);
+            localStorage.setItem('arsalways_device_expiry', Date.now() + (30 * 24 * 60 * 60 * 1000));
+            
+            return fingerprint;
+        }
+        
+        function getStableDeviceId() {
+            // Cek di memory cache dulu
+            if (appState.deviceId) {
+                return appState.deviceId;
+            }
+            
+            // Cek di localStorage
+            const storedId = localStorage.getItem('arsalways_device_fingerprint');
+            const storedExpiry = localStorage.getItem('arsalways_device_expiry');
+            
+            if (storedId && storedExpiry && Date.now() < parseInt(storedExpiry)) {
+                appState.deviceId = storedId;
+                return storedId;
+            }
+            
+            // Generate baru
+            const newId = generateDeviceFingerprint();
+            appState.deviceId = newId;
+            return newId;
+        }
+        
+        // ========== FITUR BARU: SISTEM SFL ==========
+        
+        function initSFLSystem() {
+            const checkboxes = document.querySelectorAll('.sfl-checkbox');
+            const sflBtn = document.getElementById('sflBtn');
+            
+            // Cek apakah SFL sudah pernah dilewati
+            const sflPassed = localStorage.getItem('arsalways_sfl_passed') === 'true';
+            const sflTimestamp = localStorage.getItem('arsalways_sfl_timestamp');
+            
+            if (sflPassed && sflTimestamp) {
+                const timeDiff = Date.now() - parseInt(sflTimestamp);
+                // SFL berlaku 24 jam
+                if (timeDiff < 24 * 60 * 60 * 1000) {
+                    skipSFL();
+                    return;
+                }
+            }
+            
+            // Event listener untuk checkbox
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                    sflBtn.disabled = !allChecked;
+                });
+            });
+            
+            // Tombol LEWATI SFL
+            sflBtn.addEventListener('click', function() {
+                if (Array.from(checkboxes).every(cb => cb.checked)) {
+                    // Simpan status SFL
+                    localStorage.setItem('arsalways_sfl_passed', 'true');
+                    localStorage.setItem('arsalways_sfl_timestamp', Date.now().toString());
+                    
+                    skipSFL();
+                }
+            });
+        }
+        
+        function skipSFL() {
+            sflCompleted = true;
+            document.getElementById('sflBox').style.display = 'none';
+            document.getElementById('keyBox').style.display = 'block';
+            
+            // Lanjutkan proses key generation
+            startKeyGeneration();
+        }
+        
+        // ========== FUNGSI KEY MANAGEMENT ==========
+        
+        function startKeyGeneration() {
+            const keyDisplay = document.getElementById('keyDisplay');
+            
+            // CEK KEY EXISTING YANG MASIH VALID
+            const existingKeyData = getExistingKeyData();
+            
+            if (existingKeyData && existingKeyData.valid) {
+                // GUNAKAN KEY YANG SUDAH ADA
+                currentKey = existingKeyData.key;
+                keyExpiryTime = existingKeyData.expiry;
+                deviceId = existingKeyData.deviceId;
+                
+                keyDisplay.textContent = currentKey;
+                updateDeviceInfo();
+                startExpiryTimer();
+                enableRefreshBlock();
+                showMessage('✅ Key ditemukan untuk perangkat ini', 'success');
+                
+                // SIMPAN KE MEMORY CACHE
+                appState.key = currentKey;
+                appState.expiry = keyExpiryTime;
+                
+            } else {
+                // GENERATE KEY BARU
+                keyDisplay.textContent = 'Generating key...';
+                showMessage('<span class="loading"></span> Generating new key...', '');
+                
+                setTimeout(() => {
+                    currentKey = generateRandomKey();
+                    keyDisplay.textContent = currentKey;
+                    deviceId = getStableDeviceId();
+                    
+                    showMessage('<span class="loading"></span> Saving to database...', '');
+                    
+                    // Simpan ke Firebase dan localStorage
+                    saveKeyToStorage(currentKey);
+                    
+                }, 1500);
+            }
+        }
+        
+        function getExistingKeyData() {
+            // Cek di memory cache dulu
+            if (appState.key && appState.expiry && Date.now() < appState.expiry) {
+                return {
+                    key: appState.key,
+                    expiry: appState.expiry,
+                    deviceId: appState.deviceId,
+                    valid: true
+                };
+            }
+            
+            // Cek di localStorage
+            const savedKey = localStorage.getItem('arsalways_key');
+            const savedExpiry = localStorage.getItem('arsalways_key_expiry');
+            const savedDeviceId = localStorage.getItem('arsalways_device_id');
+            
+            if (!savedKey || !savedExpiry || !savedDeviceId) {
+                return null;
+            }
+            
+            const currentDeviceId = getStableDeviceId();
+            const expiryTime = parseInt(savedExpiry);
+            const now = Date.now();
+            
+            // Validasi: Device harus sama DAN belum expired
+            if (savedDeviceId === currentDeviceId && now < expiryTime) {
+                // Update memory cache
+                appState.key = savedKey;
+                appState.expiry = expiryTime;
+                appState.deviceId = currentDeviceId;
+                
+                return {
+                    key: savedKey,
+                    expiry: expiryTime,
+                    deviceId: currentDeviceId,
+                    valid: true
+                };
+            }
+            
+            // Hapus data yang tidak valid
+            cleanupInvalidData();
+            return null;
+        }
+        
+        function saveKeyToStorage(key) {
+            if (!database) {
+                showMessage('⚠️ Database error', 'error');
+                return false;
+            }
+            
             const timestamp = Date.now();
             keyExpiryTime = timestamp + (24 * 60 * 60 * 1000);
+            deviceId = getStableDeviceId();
             
-            // SIMPAN KE LOCALSTORAGE (FITUR BARU)
-            localStorage.setItem('arsalways_device_id', deviceId);
+            // SIMPAN KE LOCALSTORAGE (PENTING!)
             localStorage.setItem('arsalways_key', key);
-            localStorage.setItem('arsalways_timestamp', timestamp);
-            localStorage.setItem('arsalways_expiry', keyExpiryTime);
+            localStorage.setItem('arsalways_key_expiry', keyExpiryTime.toString());
+            localStorage.setItem('arsalways_device_id', deviceId);
+            localStorage.setItem('arsalways_key_timestamp', timestamp.toString());
             
+            // SIMPAN KE MEMORY CACHE
+            appState.key = key;
+            appState.expiry = keyExpiryTime;
+            appState.deviceId = deviceId;
+            
+            // Simpan ke Firebase
+            const keyId = 'key_' + deviceId + '_' + timestamp;
             const keyData = {
                 key: key,
+                deviceId: deviceId,
                 timestamp: timestamp,
+                expiryTime: keyExpiryTime,
                 date: new Date().toLocaleDateString('id-ID'),
                 time: new Date().toLocaleTimeString('id-ID'),
                 status: "active",
-                // TAMBAHAN DATA BARU
-                deviceId: deviceId,
-                expiryTime: keyExpiryTime,
                 userAgent: navigator.userAgent.substring(0, 100)
             };
             
             database.ref('keys/' + keyId).set(keyData)
                 .then(() => {
                     console.log("✅ Key saved to Firebase!");
-                    showMessage('✅ Key saved to database!', 'success');
+                    showMessage('✅ Key saved successfully!', 'success');
                     
-                    // TAMBAHAN: Mulai timer countdown
+                    updateDeviceInfo();
                     startExpiryTimer();
-                    
-                    // TAMBAHAN: Aktifkan block refresh
                     enableRefreshBlock();
                     
                     return true;
                 })
                 .catch(error => {
                     console.error("❌ Save error:", error);
-                    showMessage('⚠️ Failed to save', 'error');
+                    showMessage('⚠️ Failed to save to database', 'error');
                     return false;
                 });
             
             return true;
         }
-
-        // ========== FUNGSI BARU ==========
         
-        // 1. GENERATE DEVICE FINGERPRINT
-        function generateDeviceFingerprint() {
-            const components = [
-                navigator.userAgent,
-                navigator.platform,
-                navigator.hardwareConcurrency || 'unknown',
-                screen.width + 'x' + screen.height + 'x' + screen.colorDepth,
-                new Date().getTimezoneOffset(),
-                navigator.language || 'unknown'
-            ].join('|');
-            
-            let hash = 0;
-            for (let i = 0; i < components.length; i++) {
-                const char = components.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash;
+        function cleanupInvalidData() {
+            // Hapus data lokal yang expired atau tidak valid
+            const savedExpiry = localStorage.getItem('arsalways_key_expiry');
+            if (savedExpiry && Date.now() > parseInt(savedExpiry)) {
+                localStorage.removeItem('arsalways_key');
+                localStorage.removeItem('arsalways_key_expiry');
+                localStorage.removeItem('arsalways_key_timestamp');
             }
-            
-            return 'DEV_' + Math.abs(hash).toString(36).toUpperCase() + '_' + Date.now().toString(36);
         }
         
-        // 2. CEK KEY EXISTING UNTUK DEVICE YANG SAMA
-        function checkExistingKeyForDevice() {
-            const savedDeviceId = localStorage.getItem('arsalways_device_id');
-            const savedKey = localStorage.getItem('arsalways_key');
-            const savedExpiry = localStorage.getItem('arsalways_expiry');
-            
-            if (!savedDeviceId || !savedKey || !savedExpiry) {
-                return null;
-            }
-            
-            const currentDeviceId = generateDeviceFingerprint();
-            const now = Date.now();
-            const expiryTime = parseInt(savedExpiry);
-            
-            // Cek apakah device sama DAN key masih valid (kurang dari 24 jam)
-            if (savedDeviceId === currentDeviceId && now < expiryTime) {
-                return {
-                    key: savedKey,
-                    expiryTime: expiryTime,
-                    remainingTime: expiryTime - now
-                };
-            }
-            
-            // Jika expired atau device berbeda, hapus data lama
-            localStorage.removeItem('arsalways_device_id');
-            localStorage.removeItem('arsalways_key');
-            localStorage.removeItem('arsalways_timestamp');
-            localStorage.removeItem('arsalways_expiry');
-            
-            return null;
+        // ========== FUNGSI TAMBAHAN ==========
+        
+        function updateDeviceInfo() {
+            document.getElementById('deviceInfo').textContent = 
+                `Device ID: ${deviceId.substring(0, 12)}... | Expires: ${new Date(keyExpiryTime).toLocaleTimeString('id-ID')}`;
         }
         
-        // 3. TIMER COUNTDOWN 24 JAM
         function startExpiryTimer() {
             if (!keyExpiryTime) return;
             
@@ -339,14 +573,13 @@
                     document.getElementById('timerDisplay').textContent = "⏰ KEY EXPIRED";
                     document.getElementById('timerDisplay').style.color = "#ff5555";
                     
-                    // Hapus data lokal saat expired
-                    localStorage.removeItem('arsalways_device_id');
-                    localStorage.removeItem('arsalways_key');
-                    localStorage.removeItem('arsalways_timestamp');
-                    localStorage.removeItem('arsalways_expiry');
+                    // Hapus data
+                    cleanupInvalidData();
+                    appState.key = null;
+                    appState.expiry = null;
                     
-                    // Matikan block refresh
                     disableRefreshBlock();
+                    showMessage('🔄 Key expired, refresh untuk key baru', 'error');
                     return;
                 }
                 
@@ -355,8 +588,8 @@
                 const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
                 
                 document.getElementById('timerDisplay').textContent = 
-                    `⏳ Expires in: ${hours}h ${minutes}m ${seconds}s`;
-                document.getElementById('timerDisplay').style.color = "#ff9900";
+                    `⏳ Key berlaku: ${hours} jam ${minutes} menit ${seconds} detik`;
+                document.getElementById('timerDisplay').style.color = "#00ff00";
                 
                 setTimeout(updateTimer, 1000);
             }
@@ -364,7 +597,6 @@
             updateTimer();
         }
         
-        // 4. BLOCK REFRESH SELAMA KEY MASIH AKTIF
         function enableRefreshBlock() {
             isBlockRefresh = true;
             document.getElementById('refreshWarning').style.display = 'block';
@@ -383,14 +615,12 @@
             document.getElementById('refreshWarning').style.display = 'none';
         }
         
-        // ========== FUNGSI LAMA (TIDAK DIUBAH) ==========
-        
         function showMessage(msg, type) {
             const status = document.getElementById('status');
             status.innerHTML = msg;
             status.className = 'status ' + type;
         }
-
+        
         async function copyToClipboard(text) {
             try {
                 await navigator.clipboard.writeText(text);
@@ -405,58 +635,42 @@
                 return success;
             }
         }
-
-        // Main Process - DIMODIFIKASI DENGAN FITUR BARU
+        
+        // ========== MAIN PROCESS ==========
+        
         document.addEventListener('DOMContentLoaded', function() {
-            const keyDisplay = document.getElementById('keyDisplay');
-            const copyBtn = document.getElementById('copyBtn');
+            // Inisialisasi sistem SFL
+            initSFLSystem();
             
-            // CEK KEY EXISTING TERLEBIH DAHULU (FITUR BARU)
-            const existingKey = checkExistingKeyForDevice();
-            
-            if (existingKey) {
-                // GUNAKAN KEY YANG SUDAH ADA
-                currentKey = existingKey.key;
-                keyDisplay.textContent = currentKey;
-                keyExpiryTime = existingKey.expiryTime;
+            // Setup copy button
+            document.getElementById('copyBtn').addEventListener('click', async function() {
+                if (!currentKey) return;
                 
-                // Tampilkan device info
-                deviceId = localStorage.getItem('arsalways_device_id');
-                document.getElementById('deviceInfo').textContent = `Device ID: ${deviceId}`;
-                
-                // Mulai timer
-                startExpiryTimer();
-                
-                // Aktifkan block refresh
-                enableRefreshBlock();
-                
-                showMessage('✅ Key ditemukan untuk perangkat ini', 'success');
-                
-            } else {
-                // GENERATE KEY BARU (CARA KERJA LAMA TETAP SAMA)
-                setTimeout(() => {
-                    currentKey = generateRandomKey();
-                    keyDisplay.textContent = currentKey;
-                    showMessage('<span class="loading"></span> Saving to database...', '');
-                    
-                    setTimeout(() => {
-                        saveToFirebase(currentKey);
-                    }, 500);
-                }, 1000);
-            }
-            
-            // Copy button - TIDAK DIUBAH
-            copyBtn.addEventListener('click', async function() {
                 const success = await copyToClipboard(currentKey);
                 if (success) {
-                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                    copyBtn.style.background = 'linear-gradient(45deg, #00ff00, #00cc00)';
+                    const btn = this;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    btn.style.background = 'linear-gradient(45deg, #00ff00, #00cc00)';
                     setTimeout(() => {
-                        copyBtn.innerHTML = '<i class="fas fa-copy"></i> Salin Key';
-                        copyBtn.style.background = 'linear-gradient(45deg, #00ffff, #ff00ff)';
+                        btn.innerHTML = '<i class="fas fa-copy"></i> Salin Key';
+                        btn.style.background = 'linear-gradient(45deg, #00ffff, #ff00ff)';
                     }, 2000);
                 }
             });
+            
+            // Cek apakah SFL sudah dilewati (untuk auto-skip)
+            const sflPassed = localStorage.getItem('arsalways_sfl_passed') === 'true';
+            const sflTimestamp = localStorage.getItem('arsalways_sfl_timestamp');
+            
+            if (sflPassed && sflTimestamp) {
+                const timeDiff = Date.now() - parseInt(sflTimestamp);
+                if (timeDiff < 24 * 60 * 60 * 1000) {
+                    // Auto skip SFL jika masih dalam 24 jam
+                    setTimeout(() => {
+                        skipSFL();
+                    }, 500);
+                }
+            }
         });
     </script>
 </body>
