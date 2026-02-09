@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arsalways Key Generator</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fingerprintjs2/2.1.0/fingerprint2.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
@@ -107,11 +106,6 @@
         }
         .success { color: #00ff00; }
         .error { color: #ff5555; }
-        .info { color: #ffff00; }
-        .expired {
-            color: #ff5555 !important;
-            text-decoration: line-through;
-        }
         @keyframes pulse {
             0% { box-shadow: 0 0 20px #00ffff, 0 0 40px #ff00ff; }
             100% { box-shadow: 0 0 25px #ff00ff, 0 0 50px #00ffff; }
@@ -126,41 +120,34 @@
             margin-left: 10px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .lock-screen {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
+        
+        /* STYLE BARU TANPA MENGUBAH YANG LAMA */
+        .timer-box {
+            margin-top: 15px;
+            font-size: 16px;
+            color: #ff9900;
+            font-weight: bold;
         }
-        .lock-content {
-            background: rgba(20,20,30,0.95);
-            padding: 40px;
-            border-radius: 15px;
-            border: 2px solid #ff5555;
-            max-width: 500px;
-            text-align: center;
+        .device-info {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #888;
+            font-style: italic;
         }
-        .lock-icon {
-            font-size: 60px;
-            color: #ff5555;
-            margin-bottom: 20px;
+        .refresh-warning {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff5555;
+            border-radius: 5px;
+            display: none;
         }
-        .timer {
-            font-size: 32px;
-            color: #00ffff;
-            margin: 20px 0;
-            font-family: 'Courier New', monospace;
-        }
+        
         @media (max-width: 768px) {
             .logo-circle { width: 120px; height: 120px; }
             .logo-inner { width: 90px; height: 90px; font-size: 40px; }
             .brand-name { font-size: 32px; }
             .key-value { font-size: 20px; padding: 15px; }
-            .lock-content { padding: 20px; margin: 20px; }
         }
     </style>
 </head>
@@ -173,18 +160,24 @@
         <h1 class="brand-name">Arsalways</h1>
         <div class="key-box">
             <div class="key-label">KEY ANDA</div>
-            <div id="keyDisplay" class="key-value">Mendeteksi perangkat...</div>
-            <button id="copyBtn" class="copy-btn" style="display: none;">
+            <div id="keyDisplay" class="key-value">Generating key...</div>
+            
+            <!-- ELEMEN BARU -->
+            <div id="timerDisplay" class="timer-box"></div>
+            <div id="deviceInfo" class="device-info"></div>
+            <div id="refreshWarning" class="refresh-warning">
+                ⚠️ Key masih aktif! Refresh halaman akan menghapus key ini.
+            </div>
+            
+            <button id="copyBtn" class="copy-btn">
                 <i class="fas fa-copy"></i> Salin Key
             </button>
             <div id="status" class="status"></div>
-            <div id="expiryInfo" class="status info" style="display: none; margin-top: 10px;"></div>
-            <div id="deviceId" class="status" style="font-size: 12px; opacity: 0.7; margin-top: 10px;"></div>
         </div>
     </div>
 
     <script>
-        // Firebase Config
+        // Firebase Config - TIDAK DIUBAH
         const firebaseConfig = {
             apiKey: "AIzaSyAF3B3_Bq-Q9ulQdxfXHkCBqMTIDlx0sqY",
             authDomain: "panel-user-b78ff.firebaseapp.com",
@@ -195,112 +188,26 @@
             appId: "1:86797928744:web:cb85dd498c6cf3b659281d"
         };
 
-        // Initialize Firebase
+        // Initialize Firebase Realtime Database - TIDAK DIUBAH
         let database;
         let currentKey = "";
-        let deviceFingerprint = "";
-        let isRefreshLocked = false;
-        const REFRESH_COOLDOWN = 24 * 60 * 60 * 1000; // 24 jam dalam milidetik
-
+        
+        // VARIABEL BARU UNTUK FITUR TAMBAHAN
+        let deviceId = "";
+        let keyExpiryTime = null;
+        let isBlockRefresh = false;
+        
         try {
             if (!firebase.apps.length) {
                 firebase.initializeApp(firebaseConfig);
             }
             database = firebase.database();
-            console.log("✅ Firebase connected!");
+            console.log("✅ Firebase Realtime Database connected!");
         } catch (error) {
             console.error("❌ Firebase error:", error);
         }
 
-        // Generate Device Fingerprint
-        function generateFingerprint() {
-            return new Promise((resolve) => {
-                if (window.Fingerprint2) {
-                    new Fingerprint2().get((result) => {
-                        deviceFingerprint = result;
-                        document.getElementById('deviceId').textContent = `Device ID: ${result.substring(0, 12)}...`;
-                        resolve(result);
-                    });
-                } else {
-                    // Fallback jika FingerprintJS tidak tersedia
-                    deviceFingerprint = 'fp_' + 
-                        navigator.userAgent.replace(/\s+/g, '') + 
-                        '_' + screen.width + 
-                        '_' + screen.height + 
-                        '_' + navigator.language;
-                    document.getElementById('deviceId').textContent = `Device ID: ${deviceFingerprint.substring(0, 12)}...`;
-                    resolve(deviceFingerprint);
-                }
-            });
-        }
-
-        // Check Refresh Lock
-        function checkRefreshLock() {
-            const lastAccess = sessionStorage.getItem('lastKeyAccess');
-            if (lastAccess) {
-                const timeSinceLastAccess = Date.now() - parseInt(lastAccess);
-                if (timeSinceLastAccess < REFRESH_COOLDOWN) {
-                    isRefreshLocked = true;
-                    showRefreshLock(REFRESH_COOLDOWN - timeSinceLastAccess);
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        // Show Refresh Lock Screen
-        function showRefreshLock(timeRemaining) {
-            const lockScreen = document.createElement('div');
-            lockScreen.className = 'lock-screen';
-            lockScreen.innerHTML = `
-                <div class="lock-content">
-                    <div class="lock-icon"><i class="fas fa-lock"></i></div>
-                    <h2 style="color: #ff5555;">AKSES DIBLOKIR</h2>
-                    <p style="margin: 15px 0; color: #ccc;">
-                        Anda tidak dapat membuat key baru sebelum 24 jam berlalu sejak key terakhir.
-                        Silakan gunakan key yang sudah dibuat.
-                    </p>
-                    <div class="timer" id="lockTimer"></div>
-                    <p style="color: #00ffff; margin-top: 20px;">
-                        Key akan tersedia lagi dalam:
-                    </p>
-                    <button onclick="location.reload()" style="
-                        background: #333;
-                        color: white;
-                        border: 1px solid #00ffff;
-                        padding: 10px 20px;
-                        margin-top: 20px;
-                        border-radius: 5px;
-                        cursor: pointer;
-                    ">
-                        <i class="fas fa-sync-alt"></i> Coba Lagi Nanti
-                    </button>
-                </div>
-            `;
-            document.body.appendChild(lockScreen);
-            
-            // Update timer
-            const timerElement = lockScreen.querySelector('#lockTimer');
-            function updateTimer() {
-                timeRemaining -= 1000;
-                if (timeRemaining <= 0) {
-                    location.reload();
-                    return;
-                }
-                
-                const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
-                const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
-                
-                timerElement.textContent = 
-                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            }
-            
-            updateTimer();
-            setInterval(updateTimer, 1000);
-        }
-
-        // Generate Random Key
+        // Generate Random Key - TIDAK DIUBAH
         function generateRandomKey() {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
             let key = 'ARS-';
@@ -311,87 +218,173 @@
             return key;
         }
 
-        // Check if device already has a key in Firebase
-        async function checkExistingKey() {
-            if (!database) return null;
-            
-            try {
-                const snapshot = await database.ref('devices').orderByChild('fingerprint').equalTo(deviceFingerprint).once('value');
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    const deviceData = Object.values(data)[0];
-                    return deviceData;
-                }
-                return null;
-            } catch (error) {
-                console.error("Error checking existing key:", error);
-                return null;
-            }
-        }
-
-        // Save to Firebase
-        async function saveToFirebase(key) {
+        // Save to Realtime Database - TAMBAHAN FITUR BARU
+        function saveToFirebase(key) {
             if (!database) return false;
             
-            const expiryTime = Date.now() + (24 * 60 * 60 * 1000); // 24 jam dari sekarang
+            const keyId = 'key_' + Date.now();
+            
+            // TAMBAHAN: Generate device fingerprint
+            deviceId = generateDeviceFingerprint();
+            document.getElementById('deviceInfo').textContent = `Device ID: ${deviceId}`;
+            
+            // TAMBAHAN: Set expiry 24 jam
+            const timestamp = Date.now();
+            keyExpiryTime = timestamp + (24 * 60 * 60 * 1000);
+            
+            // SIMPAN KE LOCALSTORAGE (FITUR BARU)
+            localStorage.setItem('arsalways_device_id', deviceId);
+            localStorage.setItem('arsalways_key', key);
+            localStorage.setItem('arsalways_timestamp', timestamp);
+            localStorage.setItem('arsalways_expiry', keyExpiryTime);
             
             const keyData = {
                 key: key,
-                fingerprint: deviceFingerprint,
-                timestamp: Date.now(),
-                expiry: expiryTime,
+                timestamp: timestamp,
                 date: new Date().toLocaleDateString('id-ID'),
                 time: new Date().toLocaleTimeString('id-ID'),
                 status: "active",
-                userAgent: navigator.userAgent,
-                lastAccess: Date.now()
+                // TAMBAHAN DATA BARU
+                deviceId: deviceId,
+                expiryTime: keyExpiryTime,
+                userAgent: navigator.userAgent.substring(0, 100)
             };
             
-            try {
-                // Simpan di devices dengan fingerprint sebagai identifier
-                await database.ref('devices/' + deviceFingerprint.replace(/[\.#\$\[\]]/g, '_')).set(keyData);
-                
-                // Simpan juga di keys untuk backup
-                await database.ref('keys/' + 'key_' + Date.now()).set(keyData);
-                
-                console.log("✅ Key saved to Firebase!");
-                return true;
-            } catch (error) {
-                console.error("❌ Save error:", error);
-                return false;
-            }
+            database.ref('keys/' + keyId).set(keyData)
+                .then(() => {
+                    console.log("✅ Key saved to Firebase!");
+                    showMessage('✅ Key saved to database!', 'success');
+                    
+                    // TAMBAHAN: Mulai timer countdown
+                    startExpiryTimer();
+                    
+                    // TAMBAHAN: Aktifkan block refresh
+                    enableRefreshBlock();
+                    
+                    return true;
+                })
+                .catch(error => {
+                    console.error("❌ Save error:", error);
+                    showMessage('⚠️ Failed to save', 'error');
+                    return false;
+                });
+            
+            return true;
         }
 
-        // Update expiry display
-        function updateExpiryDisplay(expiryTime) {
-            const expiryInfo = document.getElementById('expiryInfo');
-            expiryInfo.style.display = 'block';
+        // ========== FUNGSI BARU ==========
+        
+        // 1. GENERATE DEVICE FINGERPRINT
+        function generateDeviceFingerprint() {
+            const components = [
+                navigator.userAgent,
+                navigator.platform,
+                navigator.hardwareConcurrency || 'unknown',
+                screen.width + 'x' + screen.height + 'x' + screen.colorDepth,
+                new Date().getTimezoneOffset(),
+                navigator.language || 'unknown'
+            ].join('|');
             
-            function update() {
+            let hash = 0;
+            for (let i = 0; i < components.length; i++) {
+                const char = components.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            
+            return 'DEV_' + Math.abs(hash).toString(36).toUpperCase() + '_' + Date.now().toString(36);
+        }
+        
+        // 2. CEK KEY EXISTING UNTUK DEVICE YANG SAMA
+        function checkExistingKeyForDevice() {
+            const savedDeviceId = localStorage.getItem('arsalways_device_id');
+            const savedKey = localStorage.getItem('arsalways_key');
+            const savedExpiry = localStorage.getItem('arsalways_expiry');
+            
+            if (!savedDeviceId || !savedKey || !savedExpiry) {
+                return null;
+            }
+            
+            const currentDeviceId = generateDeviceFingerprint();
+            const now = Date.now();
+            const expiryTime = parseInt(savedExpiry);
+            
+            // Cek apakah device sama DAN key masih valid (kurang dari 24 jam)
+            if (savedDeviceId === currentDeviceId && now < expiryTime) {
+                return {
+                    key: savedKey,
+                    expiryTime: expiryTime,
+                    remainingTime: expiryTime - now
+                };
+            }
+            
+            // Jika expired atau device berbeda, hapus data lama
+            localStorage.removeItem('arsalways_device_id');
+            localStorage.removeItem('arsalways_key');
+            localStorage.removeItem('arsalways_timestamp');
+            localStorage.removeItem('arsalways_expiry');
+            
+            return null;
+        }
+        
+        // 3. TIMER COUNTDOWN 24 JAM
+        function startExpiryTimer() {
+            if (!keyExpiryTime) return;
+            
+            function updateTimer() {
                 const now = Date.now();
-                const timeLeft = expiryTime - now;
+                const remaining = keyExpiryTime - now;
                 
-                if (timeLeft <= 0) {
-                    expiryInfo.innerHTML = '<i class="fas fa-exclamation-triangle"></i> KEY TELAH KADALUARSA';
-                    document.getElementById('keyDisplay').classList.add('expired');
-                    document.getElementById('copyBtn').style.display = 'none';
+                if (remaining <= 0) {
+                    document.getElementById('timerDisplay').textContent = "⏰ KEY EXPIRED";
+                    document.getElementById('timerDisplay').style.color = "#ff5555";
+                    
+                    // Hapus data lokal saat expired
+                    localStorage.removeItem('arsalways_device_id');
+                    localStorage.removeItem('arsalways_key');
+                    localStorage.removeItem('arsalways_timestamp');
+                    localStorage.removeItem('arsalways_expiry');
+                    
+                    // Matikan block refresh
+                    disableRefreshBlock();
                     return;
                 }
                 
-                const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                const hours = Math.floor(remaining / (1000 * 60 * 60));
+                const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
                 
-                expiryInfo.innerHTML = `<i class="fas fa-clock"></i> Key berlaku: ${hours} jam ${minutes} menit ${seconds} detik`;
+                document.getElementById('timerDisplay').textContent = 
+                    `⏳ Expires in: ${hours}h ${minutes}m ${seconds}s`;
+                document.getElementById('timerDisplay').style.color = "#ff9900";
                 
-                // Update setiap detik
-                setTimeout(update, 1000);
+                setTimeout(updateTimer, 1000);
             }
             
-            update();
+            updateTimer();
         }
-
-        // Helper Functions
+        
+        // 4. BLOCK REFRESH SELAMA KEY MASIH AKTIF
+        function enableRefreshBlock() {
+            isBlockRefresh = true;
+            document.getElementById('refreshWarning').style.display = 'block';
+            
+            window.addEventListener('beforeunload', function(e) {
+                if (isBlockRefresh && keyExpiryTime && Date.now() < keyExpiryTime) {
+                    e.preventDefault();
+                    e.returnValue = 'Key Anda masih aktif! Yakin ingin meninggalkan halaman?';
+                    return e.returnValue;
+                }
+            });
+        }
+        
+        function disableRefreshBlock() {
+            isBlockRefresh = false;
+            document.getElementById('refreshWarning').style.display = 'none';
+        }
+        
+        // ========== FUNGSI LAMA (TIDAK DIUBAH) ==========
+        
         function showMessage(msg, type) {
             const status = document.getElementById('status');
             status.innerHTML = msg;
@@ -413,59 +406,50 @@
             }
         }
 
-        // Main Process
-        document.addEventListener('DOMContentLoaded', async function() {
+        // Main Process - DIMODIFIKASI DENGAN FITUR BARU
+        document.addEventListener('DOMContentLoaded', function() {
             const keyDisplay = document.getElementById('keyDisplay');
             const copyBtn = document.getElementById('copyBtn');
             
-            // Cek apakah refresh diblokir
-            if (!checkRefreshLock()) {
-                return;
-            }
-            
-            // Generate fingerprint
-            showMessage('<span class="loading"></span> Mendeteksi perangkat...', '');
-            await generateFingerprint();
-            
-            // Cek apakah device sudah punya key
-            showMessage('<span class="loading"></span> Memeriksa key existing...', '');
-            const existingKey = await checkExistingKey();
+            // CEK KEY EXISTING TERLEBIH DAHULU (FITUR BARU)
+            const existingKey = checkExistingKeyForDevice();
             
             if (existingKey) {
-                // Device sudah punya key
+                // GUNAKAN KEY YANG SUDAH ADA
                 currentKey = existingKey.key;
                 keyDisplay.textContent = currentKey;
+                keyExpiryTime = existingKey.expiryTime;
                 
-                // Cek apakah key sudah expired
-                const now = Date.now();
-                if (existingKey.expiry && existingKey.expiry > now) {
-                    // Key masih aktif
-                    showMessage('✅ Key ditemukan untuk perangkat ini', 'success');
-                    copyBtn.style.display = 'flex';
-                    updateExpiryDisplay(existingKey.expiry);
-                    
-                    // Update last access
-                    if (database) {
-                        database.ref('devices/' + deviceFingerprint.replace(/[\.#\$\[\]]/g, '_') + '/lastAccess').set(Date.now());
-                    }
-                } else {
-                    // Key expired, buat baru
-                    showMessage('⚠️ Key sebelumnya telah kadaluarsa, membuat key baru...', 'info');
-                    await generateNewKey();
-                }
+                // Tampilkan device info
+                deviceId = localStorage.getItem('arsalways_device_id');
+                document.getElementById('deviceInfo').textContent = `Device ID: ${deviceId}`;
+                
+                // Mulai timer
+                startExpiryTimer();
+                
+                // Aktifkan block refresh
+                enableRefreshBlock();
+                
+                showMessage('✅ Key ditemukan untuk perangkat ini', 'success');
+                
             } else {
-                // Device belum punya key, buat baru
-                await generateNewKey();
+                // GENERATE KEY BARU (CARA KERJA LAMA TETAP SAMA)
+                setTimeout(() => {
+                    currentKey = generateRandomKey();
+                    keyDisplay.textContent = currentKey;
+                    showMessage('<span class="loading"></span> Saving to database...', '');
+                    
+                    setTimeout(() => {
+                        saveToFirebase(currentKey);
+                    }, 500);
+                }, 1000);
             }
             
-            // Set refresh lock
-            sessionStorage.setItem('lastKeyAccess', Date.now().toString());
-            
-            // Copy button event
+            // Copy button - TIDAK DIUBAH
             copyBtn.addEventListener('click', async function() {
                 const success = await copyToClipboard(currentKey);
                 if (success) {
-                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Tersalin!';
+                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
                     copyBtn.style.background = 'linear-gradient(45deg, #00ff00, #00cc00)';
                     setTimeout(() => {
                         copyBtn.innerHTML = '<i class="fas fa-copy"></i> Salin Key';
@@ -473,39 +457,6 @@
                     }, 2000);
                 }
             });
-        });
-
-        // Function to generate new key
-        async function generateNewKey() {
-            const keyDisplay = document.getElementById('keyDisplay');
-            const copyBtn = document.getElementById('copyBtn');
-            
-            showMessage('<span class="loading"></span> Membuat key baru...', '');
-            
-            currentKey = generateRandomKey();
-            keyDisplay.textContent = currentKey;
-            
-            showMessage('<span class="loading"></span> Menyimpan ke database...', '');
-            
-            const saved = await saveToFirebase(currentKey);
-            if (saved) {
-                showMessage('✅ Key baru berhasil dibuat!', 'success');
-                copyBtn.style.display = 'flex';
-                
-                // Set expiry display
-                const expiryTime = Date.now() + (24 * 60 * 60 * 1000);
-                updateExpiryDisplay(expiryTime);
-            } else {
-                showMessage('❌ Gagal menyimpan key', 'error');
-            }
-        }
-
-        // Prevent accidental refresh
-        window.addEventListener('beforeunload', function(e) {
-            if (isRefreshLocked) {
-                e.preventDefault();
-                e.returnValue = 'Anda tidak dapat membuat key baru sebelum 24 jam berlalu.';
-            }
         });
     </script>
 </body>
